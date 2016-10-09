@@ -1,6 +1,6 @@
 # MultiSectionSearchBar
 
-Target:
+Goal:
  ![image](xcode.png)
  
  Current:
