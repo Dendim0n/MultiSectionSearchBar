@@ -21,7 +21,11 @@ class CustomSearchView: UIView,UITextFieldDelegate {
     var cancelButton:UIButton!
     var resultListView:searchMenu!
     
-    var hintStr = "Placeholder"
+    var hintStr = "Placeholder" {
+        didSet {
+            hintText.text = hintStr
+        }
+    }
     var isNeedSearchWhileInputing = false
     
     init(frame:CGRect,placeHolder:String) {
