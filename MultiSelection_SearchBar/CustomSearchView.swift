@@ -55,6 +55,8 @@ class CustomSearchView: UIView,UITextFieldDelegate {
         
         textField.returnKeyType = UIReturnKeyType.search
         cancelButton.addTarget(self, action: #selector(closeList), for: UIControlEvents.touchUpInside)
+        cancelButton.titleLabel!.text = "x"
+        cancelButton.titleLabel!.textColor = .blue
         hintText.textColor = UIColor.lightGray
         searchPic.contentMode = UIViewContentMode.scaleAspectFit
         searchPic.image = UIImage.init(named: "searchBar")

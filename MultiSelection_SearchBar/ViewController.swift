@@ -15,11 +15,16 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view, typically from a nib.
         let a = CustomSearchView.init();
         view.addSubview(a);
+        a.backgroundColor = .yellow
         a.snp.makeConstraints { (make) in
             make.top.equalTo(view).offset(50)
             make.centerX.equalTo(view)
             make.width.equalTo(view)
             make.height.equalTo(50)
+        }
+        a.searchButtonClosure = {
+            str in
+            print(str)
         }
     
     }
