@@ -7,7 +7,6 @@
 //
 
 //Usage: SearchButtonClosure -> #doSomething# -> call UpdateSearchMenuData
-//
 
 import UIKit
 
