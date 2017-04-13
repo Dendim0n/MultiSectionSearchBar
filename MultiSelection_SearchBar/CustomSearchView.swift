@@ -7,19 +7,20 @@
 //
 
 //Usage: SearchButtonClosure -> #doSomething# -> call UpdateSearchMenuData
+//
 
 import UIKit
 
-class CustomSearchView: UIView,UITextFieldDelegate {
+protocol SearchResultDelegate {
+    func closeList()
+}
+
+class CustomSearchView: UIView,UITextFieldDelegate,SearchResultDelegate {
     
     typealias doSearchButtonClosure = (String) -> Void
-    var searchButtonClosure:doSearchButtonClosure?
-
-    var textField:UITextField!
-    var hintText:UILabel!
-    var searchPic:UIImageView!
-    var cancelButton:UIButton!
-    var resultListView:searchMenu!
+    typealias selectRowClosure = (Int,IndexPath) -> Void
+    var searchButtonClicked:doSearchButtonClosure?
+    var searchResultClicked:selectRowClosure?
     
     var hintStr = "Placeholder" {
         didSet {
@@ -30,41 +31,65 @@ class CustomSearchView: UIView,UITextFieldDelegate {
     
     init(frame:CGRect,placeHolder:String) {
         super.init(frame: frame)
-        commonInit()
+        setUI()
         hintStr = placeHolder
     }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        commonInit()
+        setUI()
     }
     
-
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        commonInit()
+        setUI()
     }
     
-    private func commonInit(){
-        
-        resultListView = searchMenu.init(frame: self.frame)
-        textField = UITextField.init()
-        hintText = UILabel.init()
-        cancelButton = UIButton.init()
-        searchPic = UIImageView.init()
-        
-        textField.returnKeyType = UIReturnKeyType.search
-        cancelButton.addTarget(self, action: #selector(closeList), for: UIControlEvents.touchUpInside)
-        cancelButton.titleLabel!.text = "x"
-        cancelButton.titleLabel!.textColor = .blue
-        hintText.textColor = UIColor.lightGray
-        searchPic.contentMode = UIViewContentMode.scaleAspectFit
-        searchPic.image = UIImage.init(named: "searchBar")
+    func updateSearchMenuData(dataArray:Array<Array<String>>,titleArray:Array<String>) {
+        resultListView.updateData(dataArray: dataArray, titleArray: titleArray)
+    }
+    
+    //MARK: - UI
+    lazy var textField:UITextField = {
+        let txt = UITextField()
+        txt.delegate = self
+        txt.returnKeyType = .search
+        return txt
+    }()
+    lazy var hintText:UILabel = {
+        let lbl = UILabel()
+        lbl.textColor = .lightGray
+        lbl.text = self.hintStr
+        return lbl
+    }()
+    
+    lazy var searchPic:UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.image = UIImage.init(named: "searchBar")
+        return iv
+    }()
+    
+    lazy var cancelButton:UIButton = {
+        let btn = UIButton.init()
+        btn.addTarget(self, action: #selector(cancel), for: UIControlEvents.touchUpInside)
+        btn.setTitle("Cancel", for: .normal)
+        btn.setTitleColor(.gray, for: .normal)
+        btn.layer.cornerRadius = 3
+        btn.layer.borderColor = UIColor.gray.cgColor
+        btn.layer.borderWidth = 0.5
+        return btn
+    }()
+    
+    lazy var resultListView:searchMenu = {
+        let list = searchMenu.init(frame: self.frame)
+        list.doSelect = self.searchResultClicked
+        list.delegate = self
+        return list
+    }()
+    
+    private func setUI(){
         cancelButton.alpha = 0
-        hintText.text = hintStr
-        textField.delegate = self
-        cancelButton.backgroundColor = UIColor.lightGray
-        
         addSubview(hintText)
         addSubview(searchPic)
         addSubview(textField)
@@ -74,14 +99,14 @@ class CustomSearchView: UIView,UITextFieldDelegate {
             make.center.equalToSuperview()
             make.height.equalTo(24)
             make.left.equalToSuperview().offset(24)
-            make.right.equalToSuperview().offset(24)
+            make.right.equalToSuperview().offset(-24)
         }
         hintText.snp.makeConstraints { (make) in
             make.center.equalTo(textField)
         }
         searchPic.snp.makeConstraints { (make) in
             make.centerY.equalTo(hintText)
-            make.right.equalTo(hintText.snp.left)
+            make.right.equalTo(hintText.snp.left).offset(-4)
             make.height.equalTo(hintText.snp.height)
             make.width.equalTo(hintText.snp.height)
         }
@@ -89,43 +114,13 @@ class CustomSearchView: UIView,UITextFieldDelegate {
             make.right.equalTo(textField)
             make.centerY.equalTo(textField)
             make.height.equalTo(textField)
-            make.width.equalTo(50)
+            make.width.equalTo(80)
         }
-    }
-    
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        print("return!")
-        if searchButtonClosure != nil {
-            searchButtonClosure!(textField.text!)
-        }
-        textField.resignFirstResponder()
-        return true
-    }
-    
-    func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
-        animToInput()
-        superview?.bringSubview(toFront: self)
-        showResult()
-        return true
-    }
-    
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        if textField.text == "" {
-            hintText.text = hintStr
-        } else {
-            hintText.text = ""
-            if searchButtonClosure != nil && isNeedSearchWhileInputing {
-                searchButtonClosure!(textField.text!)
-            }
-        }
-        return true
     }
     
     private func showResult() {
-        
         superview?.addSubview(resultListView)
         superview?.bringSubview(toFront: resultListView)
-        
         resultListView.snp.makeConstraints { (make) in
             make.top.equalTo(self.snp.bottom)
             make.bottom.equalTo(superview!)
@@ -134,10 +129,22 @@ class CustomSearchView: UIView,UITextFieldDelegate {
         }
     }
     
-    @objc private func closeList() {
+    @objc private func cancel() {
         textField.text = ""
+        closeList()
+    }
+    
+    func closeList() {
         textField.resignFirstResponder()
-        hintText.text = hintStr
+        if let text = textField.text {
+            if text != "" {
+                hintText.text = ""
+            } else {
+                hintText.text = hintStr
+            }
+        } else {
+            hintText.text = hintStr
+        }
         resultListView.removeFromSuperview()
         animToOrigin()
     }
@@ -146,7 +153,7 @@ class CustomSearchView: UIView,UITextFieldDelegate {
         UIView.animate(withDuration: 0.3) {
             self.cancelButton.alpha = 1
             self.searchPic.snp.remakeConstraints({ (make) in
-                make.right.equalTo(self.hintText.snp.left)
+                make.right.equalTo(self.hintText.snp.left).offset(-4)
                 make.centerY.equalToSuperview()
                 make.height.equalToSuperview()
             })
@@ -161,34 +168,83 @@ class CustomSearchView: UIView,UITextFieldDelegate {
     
     private func animToOrigin() {
         UIView.animate(withDuration: 0.3) {
-            self.cancelButton.alpha = 0
+            if let text = self.textField.text {
+                if text != "" {
+                    self.cancelButton.alpha = 1
+                } else {
+                    self.cancelButton.alpha = 0
+                }
+            } else {
+                self.cancelButton.alpha = 0
+            }
+            
             self.hintText.snp.remakeConstraints { (make) in
                 make.center.equalToSuperview()
             }
             self.searchPic.snp.remakeConstraints { (make) in
                 make.centerY.equalTo(self.hintText)
-                make.right.equalTo(self.hintText.snp.left)
+                make.right.equalTo(self.hintText.snp.left).offset(-4)
                 make.height.equalTo(self.hintText.snp.height)
                 make.width.equalTo(self.hintText.snp.height)
             }
             self.layoutIfNeeded()
         }
-        
     }
     
-    func UpdateSearchMenuData(dataArray:Array<Array<String>>,titleArray:Array<String>) {
-        resultListView.updateData(dataArray: dataArray, titleArray: titleArray)
+    //MARK: - UITextFieldDelegate
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        print("return!")
+        searchButtonClicked?(textField.text!)
+        textField.resignFirstResponder()
+        return true
+    }
+    
+    func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
+        animToInput()
+        superview?.bringSubview(toFront: self)
+        if let text = textField.text {
+            if text != "" {
+                hintText.text = ""
+            }
+        } else {
+            hintText.text = hintStr
+        }
+        showResult()
+        return true
+    }
+    
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField.text == "" {
+            hintText.text = hintStr
+        } else {
+            hintText.text = ""
+            if isNeedSearchWhileInputing {
+                searchButtonClicked?(textField.text!)
+            }
+        }
+        return true
     }
 }
 
 class searchMenu: UIView,UITableViewDelegate,UITableViewDataSource {
     
     typealias selectRowClosure = (Int,IndexPath) -> Void
-    
     var doSelect:selectRowClosure?
+    var delegate:SearchResultDelegate?
     
-    var segmentSelector:UISegmentedControl!
-    var tableView:UITableView!
+    lazy var segmentSelector:UISegmentedControl = {
+        let seg = UISegmentedControl()
+        seg.addTarget(self, action: #selector(segmentChanged), for: UIControlEvents.valueChanged)
+        seg.selectedSegmentIndex = 0
+        return seg
+    }()
+    lazy var tableView:UITableView = {
+        let tbl = UITableView()
+        tbl.delegate = self
+        tbl.dataSource = self
+        tbl.tableFooterView = UIView()
+        return tbl
+    }()
     
     var dataSourceArray:Array<Array<String>> = [[]]
     var segmentTitleArray:Array<String> = []
@@ -204,18 +260,8 @@ class searchMenu: UIView,UITableViewDelegate,UITableViewDataSource {
     }
     
     func commonInit() {
-        
-        segmentSelector = UISegmentedControl.init()
-        tableView = UITableView.init()
-        tableView.delegate = self
-        tableView.dataSource = self
-        
-        segmentSelector.addTarget(self, action: #selector(segmentChanged), for: UIControlEvents.valueChanged)
-        segmentSelector.selectedSegmentIndex = 0
-        
         addSubview(segmentSelector)
         addSubview(tableView)
-        
         segmentSelector.snp.makeConstraints { (make) in
             make.centerX.equalToSuperview()
             make.top.equalToSuperview().offset(20)
@@ -228,7 +274,6 @@ class searchMenu: UIView,UITableViewDelegate,UITableViewDataSource {
             make.width.equalToSuperview()
             make.bottom.equalToSuperview()
         }
-//        updateData(dataArray: [["1","2","3","4","5","6"],["11","22","33","44","55","66"],["111","222","333","444","555","666"]], titleArray: ["1","2","3"])
     }
     
     func updateData(dataArray:Array<Array<String>>,titleArray:Array<String>) {
@@ -255,7 +300,7 @@ class searchMenu: UIView,UITableViewDelegate,UITableViewDataSource {
                 segmentSelector.insertSegment(withTitle: titleStr, at: segmentTitleArray.index(of: titleStr)!, animated: false)
             }
             segmentSelector.selectedSegmentIndex = 0
-            
+            tableView.reloadData()
         }
     }
     
@@ -263,6 +308,7 @@ class searchMenu: UIView,UITableViewDelegate,UITableViewDataSource {
         tableView.reloadData()
     }
     
+    //MARK: - UITableView Datasource & Deleagte
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if segmentSelector.selectedSegmentIndex < 0 {
             return dataSourceArray[0].count - 1;
@@ -281,9 +327,8 @@ class searchMenu: UIView,UITableViewDelegate,UITableViewDataSource {
         return cell
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if doSelect != nil {
-            doSelect!(segmentSelector.selectedSegmentIndex == -1 ? 0 : segmentSelector.selectedSegmentIndex,indexPath)
-        }
+        doSelect?(segmentSelector.selectedSegmentIndex == -1 ? 0 : segmentSelector.selectedSegmentIndex,indexPath)
+        delegate?.closeList()
     }
     
 }

@@ -229,6 +229,7 @@
 				TargetAttributes = {
 					40C5A9741DA89B870040BBD7 = {
 						CreatedOnToolsVersion = 8.0;
+						DevelopmentTeam = DG237PBV6R;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -428,6 +429,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = DG237PBV6R;
 				INFOPLIST_FILE = MultiSelection_SearchBar/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Ned.MultiSection-SearchBar";
@@ -440,6 +442,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = DG237PBV6R;
 				INFOPLIST_FILE = MultiSelection_SearchBar/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Ned.MultiSection-SearchBar";
